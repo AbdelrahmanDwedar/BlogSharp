@@ -1,3 +1,4 @@
+using BlogSharp.Data;
 using Microsoft.EntityFrameworkCore;
 using RabbitMQ.Client;
 

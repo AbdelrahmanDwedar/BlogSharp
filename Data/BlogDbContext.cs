@@ -1,3 +1,4 @@
+using BlogSharp.Entities;
 using Microsoft.EntityFrameworkCore;
 
 namespace BlogSharp.Data
@@ -5,10 +6,16 @@ namespace BlogSharp.Data
     public class BlogDbContext : DbContext
     {
         public BlogDbContext(DbContextOptions<BlogDbContext> options)
-            : base(options)
-        {
-        }
+            : base(options) { }
 
-		// TODO: add sets for the entities
+        public DbSet<User> Users { get; set; }
+
+        protected override void OnModelCreating(ModelBuilder modelBuilder)
+        {
+            modelBuilder.Entity<User>(entity =>
+            {
+                entity.HasIndex(user => user.Id);
+            });
+        }
     }
 }
