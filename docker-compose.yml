@@ -2,7 +2,7 @@ version: '3.8'
 
 services:
   web:
-    image: mcr.microsoft.com/dotnet/aspnet:6.0
+    image: mcr.microsoft.com/dotnet/aspnet:8.0
     ports:
       - "8080:80"
     build:
@@ -14,9 +14,9 @@ services:
       - rabbitmq
     environment:
       - ASPNETCORE_ENVIRONMENT=${ASPNETCORE_ENVIRONMENT}
-      - ConnectionStrings__DefaultConnection=${ConnectionStrings__DefaultConnection}
-      - Redis__ConnectionString=${Redis__ConnectionString}
-      - RabbitMQ__ConnectionString=${RabbitMQ__ConnectionString}
+      - ConnectionStrings__DefaultConnection=${PostgresConnection}
+      - Redis__ConnectionString=${RedisConnection}
+      - RabbitMQ__ConnectionString=${RabbitMQConnection}
 
   db:
     image: postgres:14
