@@ -11,7 +11,7 @@ public class User
     public DateTime CreatedAt { get; set; }
     public DateOnly? BirthDate { get; set; }
 
-	public bool isDeleted {get;set;} = false;
+    public bool isDeleted { get; set; } = false;
 
     // TODO: add blogs collection
 }
