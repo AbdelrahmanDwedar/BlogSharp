@@ -10,7 +10,8 @@ builder.Configuration.AddJsonFile("appsettings.json", optional: true, reloadOnCh
 
 // EF with Postgres
 builder.Services.AddDbContext<BlogDbContext>(options =>
-    options.UseNpgsql(builder.Configuration.GetConnectionString("PostgresConnection")));
+    options.UseNpgsql(builder.Configuration.GetConnectionString("PostgresConnection"))
+);
 
 // Redis for cache
 builder.Services.AddStackExchangeRedisCache(options =>
@@ -22,8 +23,9 @@ builder.Services.AddStackExchangeRedisCache(options =>
 // RabbitMQ
 builder.Services.AddSingleton<IConnectionFactory>(sp =>
 {
-    var rabbitMqConnectionString = builder.Configuration.GetConnectionString("RabbitMQConnection") 
-                                   ?? "default_rabbitmq_connection_string";
+    var rabbitMqConnectionString =
+        builder.Configuration.GetConnectionString("RabbitMQConnection")
+        ?? "default_rabbitmq_connection_string";
     var factory = new ConnectionFactory()
     {
         Uri = new Uri(rabbitMqConnectionString),
@@ -73,4 +75,3 @@ app.UseAuthorization();
 app.MapControllers();
 
 app.Run();
-
