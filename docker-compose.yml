@@ -1,22 +1,22 @@
 version: '3.8'
 
 services:
-  web:
-    image: mcr.microsoft.com/dotnet/aspnet:8.0
-    ports:
-      - "8080:80"
-    build:
-      context: .
-      dockerfile: Dockerfile
-    depends_on:
-      - db
-      - redis
-      - rabbitmq
-    environment:
-      - ASPNETCORE_ENVIRONMENT=${ASPNETCORE_ENVIRONMENT}
-      - ConnectionStrings__DefaultConnection=${PostgresConnection}
-      - Redis__ConnectionString=${RedisConnection}
-      - RabbitMQ__ConnectionString=${RabbitMQConnection}
+  # web:
+  #   image: mcr.microsoft.com/dotnet/aspnet:8.0
+  #   ports:
+  #     - "8080:80"
+  #   build:
+  #     context: .
+  #     dockerfile: Dockerfile
+  #   depends_on:
+  #     - db
+  #     - redis
+  #     - rabbitmq
+  #   environment:
+  #     - ASPNETCORE_ENVIRONMENT=${ASPNETCORE_ENVIRONMENT}
+  #     - ConnectionStrings__DefaultConnection=${PostgresConnection}
+  #     - Redis__ConnectionString=${RedisConnection}
+  #     - RabbitMQ__ConnectionString=${RabbitMQConnection}
 
   db:
     image: postgres:14
