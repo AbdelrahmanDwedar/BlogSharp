@@ -49,3 +49,17 @@ coverage/
 **/packages/
 # Uncomment if you have a packages directory that is not for NuGet packages
 # !**/packages/*/
+
+# Include only the necessary project files
+!BlogSharp/
+!BlogSharp/BlogSharp.csproj
+!BlogSharp/**/*.cs
+!BlogSharp/**/*.json
+!BlogSharp/**/*.config
+
+# Ensure BlogSharp directory and its contents are included
+!BlogSharp/
+!BlogSharp/**
+
+# Remove the problematic pattern
+# ** (removed to avoid excluding everything)
