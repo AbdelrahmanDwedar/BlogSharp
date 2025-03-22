@@ -1,6 +1,8 @@
+using Microsoft.AspNetCore.Identity;
+
 namespace BlogSharp.Entities;
 
-public class User
+public class User : IdentityUser<Guid>
 {
     public Guid Id { get; set; }
     public required string Name { get; set; }

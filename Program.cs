@@ -1,6 +1,8 @@
-using BlogSharp.Data;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using RabbitMQ.Client;
+using BlogSharp.Entities;
+using BlogSharp.Data;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -8,9 +10,20 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Configuration.AddEnvironmentVariables();
 builder.Configuration.AddJsonFile("appsettings.json", optional: true, reloadOnChange: true);
 
-// EF with Postgres
+// Add Identity with default token providers
+builder.Services.AddIdentity<User, IdentityRole<Guid>>(options =>
+    {
+        options.User.RequireUniqueEmail = true; // Example: Ensure unique emails
+        options.Password.RequireDigit = true;  // Example: Enforce strong passwords
+    })
+    .AddEntityFrameworkStores<BlogDbContext>()
+    .AddDefaultTokenProviders() // Ensures token-based features like password reset work
+    .AddApiEndpoints(); // Enables Identity API endpoints
+
+// Configure EF Core with PostgreSQL
 builder.Services.AddDbContext<BlogDbContext>(options =>
-    options.UseNpgsql(builder.Configuration.GetConnectionString("PostgresConnection"))
+    options.UseNpgsql(builder.Configuration.GetConnectionString("PostgresConnection"),
+        npgsqlOptions => npgsqlOptions.MigrationsAssembly(typeof(BlogDbContext).Assembly.GetName().Name))
 );
 
 // Redis for cache
