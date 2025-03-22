@@ -1,0 +1,65 @@
+# Ignore .NET Core project files
+**/.classpath
+**/.dockerignore
+**/.env
+**/.git
+**/.gitignore
+**/.project
+**/.settings
+**/.toolstarget
+**/.vs
+**/.vscode
+**/*.csproj.user
+**/*.suo
+**/*.user
+**/*.userosscache
+**/*.sln.docstates
+
+# Ignore build outputs
+bin/
+obj/
+
+# Ignore user-specific files
+**/.DS_Store
+**/Thumbs.db
+
+# Ignore logs and temporary files
+logs/
+*.log
+*.tlog
+**/AppData/Local/Temp
+
+# Ignore node_modules and npm debug log
+node_modules/
+npm-debug.log
+
+# Ignore test results
+TestResults/
+coverage/
+*.trx
+*.coverage
+*.coveragexml
+*.codecov
+
+# Ignore publish output
+**/publish/
+**/out/
+
+# Ignore NuGet packages
+**/packages/
+# Uncomment if you have a packages directory that is not for NuGet packages
+# !**/packages/*/
+
+# Include only the necessary project files
+!BlogSharp/
+!BlogSharp/BlogSharp.csproj
+!BlogSharp/**/*.cs
+!BlogSharp/**/*.json
+!BlogSharp/**/*.config
+
+# Ensure BlogSharp directory and its contents are included
+!BlogSharp/
+!BlogSharp/**
+
+# Remove the problematic pattern
+# ** (removed to avoid excluding everything)

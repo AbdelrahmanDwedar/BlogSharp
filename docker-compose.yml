@@ -1,0 +1,61 @@
+services:
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: blogsharp:latest
+    ports:
+      - "8080:80"
+    depends_on:
+      - db
+      - redis
+      - rabbitmq
+    environment:
+      ASPNETCORE_ENVIRONMENT: ${ASPNETCORE_ENVIRONMENT:-Development} # Default to Development
+      ConnectionStrings__DefaultConnection: ${PostgresConnection:-Host=db;Database=blogsharp;Username=postgres;Password=postgres}
+      Redis__ConnectionString: ${RedisConnection:-redis:6379}
+      RabbitMQ__ConnectionString: ${RabbitMQConnection:-amqp://guest:guest@rabbitmq:5672/}
+    volumes:
+      - ./BlogSharp:/app:rw # Allow read-write for development
+    restart: always # Ensure the service restarts on failure
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:80/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  db:
+    image: postgres:14
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-blogsharp}
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+    volumes:
+      - db-data:/var/lib/postgresql/data:rw
+
+  redis:
+    image: redis:latest
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/data:rw
+
+  rabbitmq:
+    image: rabbitmq:3-management
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    environment:
+      RABBITMQ_DEFAULT_USER: ${RABBITMQ_DEFAULT_USER}
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_DEFAULT_PASS}
+    volumes:
+      - rabbitmq-data:/var/lib/rabbitmq:rw
+
+volumes:
+  db-data:
+    driver: local
+  redis-data:
+    driver: local
+  rabbitmq-data:
+    driver: local
+
