@@ -20,7 +20,7 @@ public class UserController : ControllerBase
     [HttpGet]
     public async Task<ActionResult<IEnumerable<User>>> GetAllUsers()
     {
-        var users = await _context.Users.ToListAsync();
+        var users = await _context.Users.Where(u => !u.isDeleted).ToListAsync();
         return Ok(users);
     }
 
@@ -93,6 +93,37 @@ public class UserController : ControllerBase
                 throw;
             }
         }
+
+        return NoContent();
+    }
+
+    [HttpDelete("{id}")]
+    public async Task<IActionResult> DeleteUser(Guid id)
+    {
+        var user = await _context.Users.FindAsync(id);
+        if (user == null)
+        {
+            return NotFound();
+        }
+
+        _context.Users.Remove(user);
+        await _context.SaveChangesAsync();
+
+        return NoContent();
+    }
+
+    [HttpPatch("{id}/soft-delete")]
+    public async Task<IActionResult> SoftDeleteUser(Guid id)
+    {
+        var user = await _context.Users.FindAsync(id);
+        if (user == null)
+        {
+            return NotFound();
+        }
+
+        user.isDeleted = true;
+        _context.Entry(user).State = EntityState.Modified;
+        await _context.SaveChangesAsync();
 
         return NoContent();
     }

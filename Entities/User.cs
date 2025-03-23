@@ -15,5 +15,6 @@ public class User : IdentityUser<Guid>
 
     public bool isDeleted { get; set; } = false;
 
-    // TODO: add blogs collection
+    public ICollection<Blog>? Blogs { get; set; }
+    public ICollection<Comment>? Comments { get; set; }
 }

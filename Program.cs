@@ -6,34 +6,29 @@ using BlogSharp.Data;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Configure environment variables and app settings
 builder.Configuration.AddEnvironmentVariables();
 builder.Configuration.AddJsonFile("appsettings.json", optional: true, reloadOnChange: true);
 
-// Add Identity with default token providers
 builder.Services.AddIdentity<User, IdentityRole<Guid>>(options =>
     {
-        options.User.RequireUniqueEmail = true; // Example: Ensure unique emails
-        options.Password.RequireDigit = true;  // Example: Enforce strong passwords
+        options.User.RequireUniqueEmail = true;
+        options.Password.RequireDigit = true;
     })
     .AddEntityFrameworkStores<BlogDbContext>()
-    .AddDefaultTokenProviders() // Ensures token-based features like password reset work
-    .AddApiEndpoints(); // Enables Identity API endpoints
+    .AddDefaultTokenProviders()
+    .AddApiEndpoints();
 
-// Configure EF Core with PostgreSQL
 builder.Services.AddDbContext<BlogDbContext>(options =>
     options.UseNpgsql(builder.Configuration.GetConnectionString("PostgresConnection"),
         npgsqlOptions => npgsqlOptions.MigrationsAssembly(typeof(BlogDbContext).Assembly.GetName().Name))
 );
 
-// Redis for cache
 builder.Services.AddStackExchangeRedisCache(options =>
 {
     options.Configuration = builder.Configuration.GetConnectionString("RedisConnection");
     options.InstanceName = "YourRedisInstanceName";
 });
 
-// RabbitMQ
 builder.Services.AddSingleton<IConnectionFactory>(sp =>
 {
     var rabbitMqConnectionString =
@@ -59,16 +54,19 @@ builder.Services.AddTransient<IModel>(sp =>
     return connection.CreateModel();
 });
 
-// API Controllers
 builder.Services.AddControllers();
 
-// Add Swagger for API documentation
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
 var app = builder.Build();
 
-// Configure the HTTP request pipeline.
+using (var scope = app.Services.CreateScope())
+{
+    var dbContext = scope.ServiceProvider.GetRequiredService<BlogDbContext>();
+    dbContext.Database.Migrate();
+}
+
 if (app.Environment.IsDevelopment())
 {
     app.UseDeveloperExceptionPage();

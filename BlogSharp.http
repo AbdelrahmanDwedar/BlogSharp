@@ -3,4 +3,83 @@
 GET {{BlogSharp_HostAddress}}/weatherforecast/
 Accept: application/json
 
+GET {{BlogSharp_HostAddress}}/api/User
+Accept: application/json
+
+GET {{BlogSharp_HostAddress}}/api/User/{id}
+Accept: application/json
+
+POST {{BlogSharp_HostAddress}}/api/User
+Content-Type: application/json
+
+{
+  "name": "John Doe",
+  "email": "john.doe@example.com",
+  "password": "Password123!",
+  "phone": "1234567890",
+  "birthDate": "1990-01-01"
+}
+
+PUT {{BlogSharp_HostAddress}}/api/User/{id}
+Content-Type: application/json
+
+{
+  "name": "Updated Name"
+}
+
+DELETE {{BlogSharp_HostAddress}}/api/User/{id}
+
+PATCH {{BlogSharp_HostAddress}}/api/User/{id}/soft-delete
+
+GET {{BlogSharp_HostAddress}}/api/Blog
+Accept: application/json
+
+GET {{BlogSharp_HostAddress}}/api/Blog/{id}
+Accept: application/json
+
+POST {{BlogSharp_HostAddress}}/api/Blog
+Content-Type: application/json
+
+{
+  "title": "My First Blog",
+  "content": "This is the content of my first blog.",
+  "userId": "user-guid-here"
+}
+
+PUT {{BlogSharp_HostAddress}}/api/Blog/{id}
+Content-Type: application/json
+
+{
+  "title": "Updated Blog Title",
+  "content": "Updated content for the blog."
+}
+
+DELETE {{BlogSharp_HostAddress}}/api/Blog/{id}
+
+GET {{BlogSharp_HostAddress}}/api/Blog/search?query=content
+Accept: application/json
+
+GET {{BlogSharp_HostAddress}}/api/Comment/blog/{blogId}
+Accept: application/json
+
+GET {{BlogSharp_HostAddress}}/api/Comment/user/{userId}
+Accept: application/json
+
+POST {{BlogSharp_HostAddress}}/api/Comment
+Content-Type: application/json
+
+{
+  "content": "This is a comment.",
+  "blogId": "blog-guid-here"
+}
+
+PUT {{BlogSharp_HostAddress}}/api/Comment/{id}
+Content-Type: application/json
+
+{
+  "content": "Updated comment content."
+}
+
+DELETE {{BlogSharp_HostAddress}}/api/Comment/{id}
+
 ###
