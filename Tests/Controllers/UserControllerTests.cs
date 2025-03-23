@@ -5,6 +5,7 @@ using BlogSharp.Services;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Moq;
+using Moq.EntityFrameworkCore;
 using Xunit;
 
 namespace BlogSharp.Tests.Controllers;
@@ -26,7 +27,16 @@ public class UserControllerTests
 	public async Task GetAllUsers_ReturnsUsers()
 	{
 		// Arrange
-		var users = new List<User> { new User { Name = "John Doe" } };
+		var users = new List<User>
+		{
+			new User
+			{
+				Name = "John Doe",
+				Email = "john.doe@example.com",
+				Password = "Password123!",
+				Phone = "1234567890"
+			}
+		};
 		_mockDbContext.Setup(db => db.Users).ReturnsDbSet(users);
 
 		// Act
@@ -42,7 +52,14 @@ public class UserControllerTests
 	{
 		// Arrange
 		var userId = Guid.NewGuid();
-		var user = new User { Id = userId, Name = "John Doe" };
+		var user = new User
+		{
+			Id = userId,
+			Name = "John Doe",
+			Email = "john.doe@example.com",
+			Password = "Password123!",
+			Phone = "1234567890"
+		};
 		_mockCache.Setup(c => c.GetAsync<User>($"User_{userId}")).ReturnsAsync(user);
 
 		// Act

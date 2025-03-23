@@ -5,7 +5,7 @@ using BlogSharp.Services;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
-namespace MyApp.Namespace;
+namespace BlogSharp.Controllers;
 
 [Route("api/[controller]")]
 [ApiController]
@@ -80,11 +80,11 @@ public class UserController : ControllerBase
             return NotFound();
         }
 
-        user.Name ??= updatedUser.Name;
-        user.Email ??= updatedUser.Email;
-        user.Password ??= updatedUser.Password;
-        user.Phone ??= updatedUser.Phone;
-        user.BirthDate ??= updatedUser.BirthDate;
+        user.Name = updatedUser.Name ?? user.Name;
+        user.Email = updatedUser.Email ?? user.Email;
+        user.Password = updatedUser.Password ?? user.Password;
+        user.Phone = updatedUser.Phone ?? user.Phone;
+        user.BirthDate = updatedUser.BirthDate ?? user.BirthDate;
 
         _context.Entry(user).State = EntityState.Modified;
         await _context.SaveChangesAsync();

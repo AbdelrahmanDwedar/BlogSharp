@@ -3,6 +3,8 @@ using Microsoft.EntityFrameworkCore;
 using RabbitMQ.Client;
 using BlogSharp.Entities;
 using BlogSharp.Data;
+using BlogSharp.Services; // Correct namespace for ICache, RedisCache, IQueueable, and RabbitMQQueue
+using BlogSharp.Consumers; // Add this for BlogConsumer
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -61,40 +63,30 @@ builder.Services.AddTransient<IModel>(sp =>
 builder.Services.AddControllers();
 builder.Services.AddSingleton<IQueueable, RabbitMQQueue>();
 builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen(); ;
-
-builder.Services.AddHostedService<BlogConsumer>(); ntsApiExplorer();
 builder.Services.AddSwaggerGen();
+
+builder.Services.AddHostedService<BlogConsumer>();
+
 var app = builder.Build();
-ar app = builder.Build();
+
 using (var scope = app.Services.CreateScope())
 {
-    reateScope())
     var dbContext = scope.ServiceProvider.GetRequiredService<BlogDbContext>();
-    dbContext.Database.Migrate(); var dbContext = scope.ServiceProvider.GetRequiredService<BlogDbContext>();
+    dbContext.Database.Migrate();
 }
 
 if (app.Environment.IsDevelopment())
 {
-    sDevelopment())
     app.UseDeveloperExceptionPage();
-    app.UseSwagger(); pp.UseDeveloperExceptionPage();
+    app.UseSwagger();
     app.UseSwaggerUI(c =>
-    {.UseSwaggerUI(c =>
-        c.SwaggerEndpoint("/swagger/v1/swagger.json", "Your API V1");
     {
-    }); c.SwaggerEndpoint("/swagger/v1/swagger.json", "Your API V1");
+        c.SwaggerEndpoint("/swagger/v1/swagger.json", "Your API V1");
+    });
 }
-}
-app.UseHttpsRedirection();
+
 app.UseHttpsRedirection();
 app.UseRouting();
-app.UseRouting();
-app.UseAuthorization();
 app.UseAuthorization();
 app.MapControllers();
-app.MapControllers();
-
-
-app.Run();
 app.Run();

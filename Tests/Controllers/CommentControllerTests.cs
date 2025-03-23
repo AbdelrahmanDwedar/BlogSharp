@@ -4,6 +4,7 @@ using BlogSharp.Entities;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Moq;
+using Moq.EntityFrameworkCore;
 using Xunit;
 
 namespace BlogSharp.Tests.Controllers;
@@ -25,7 +26,7 @@ public class CommentControllerTests
 		// Arrange
 		var blogId = Guid.NewGuid();
 		var comments = new List<Comment> { new Comment(null!, null!, "Test Comment") { BlogId = blogId } };
-		_mockDbContext.Setup(db => db.Comments.Where(c => c.Blog.Id == blogId)).ReturnsDbSet(comments);
+		_mockDbContext.Setup(db => db.Comments).ReturnsDbSet(comments);
 
 		// Act
 		var result = await _controller.GetCommentsByBlog(blogId);
