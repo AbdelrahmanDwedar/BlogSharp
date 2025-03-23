@@ -11,10 +11,10 @@ namespace BlogSharp.Controllers;
 public class BlogController : ControllerBase
 {
 	private readonly BlogDbContext _context;
-	private readonly IRedisCache _cache;
+	private readonly ICache _cache;
 	private readonly IQueueable _queue;
 
-	public BlogController(BlogDbContext context, IRedisCache cache, IQueueable queue)
+	public BlogController(BlogDbContext context, ICache cache, IQueueable queue)
 	{
 		_context = context;
 		_cache = cache;

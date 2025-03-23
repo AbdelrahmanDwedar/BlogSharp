@@ -12,9 +12,9 @@ namespace MyApp.Namespace;
 public class UserController : ControllerBase
 {
     private readonly BlogDbContext _context;
-    private readonly IRedisCache _cache;
+    private readonly ICache _cache;
 
-    public UserController(BlogDbContext context, IRedisCache cache)
+    public UserController(BlogDbContext context, ICache cache)
     {
         _context = context;
         _cache = cache;

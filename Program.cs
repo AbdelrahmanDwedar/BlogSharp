@@ -31,7 +31,7 @@ builder.Services.AddStackExchangeRedisCache(options =>
 });
 
 // Register Redis-based cache service
-builder.Services.AddSingleton<IRedisCache, RedisCache>();
+builder.Services.AddSingleton<ICache, RedisCache>();
 
 builder.Services.AddSingleton<IConnectionFactory>(sp =>
 {

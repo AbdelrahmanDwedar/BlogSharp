@@ -12,13 +12,13 @@ namespace BlogSharp.Tests.Controllers;
 public class UserControllerTests
 {
 	private readonly Mock<BlogDbContext> _mockDbContext;
-	private readonly Mock<IRedisCache> _mockCache;
+	private readonly Mock<ICache> _mockCache;
 	private readonly UserController _controller;
 
 	public UserControllerTests()
 	{
 		_mockDbContext = new Mock<BlogDbContext>(new DbContextOptions<BlogDbContext>());
-		_mockCache = new Mock<IRedisCache>();
+		_mockCache = new Mock<ICache>();
 		_controller = new UserController(_mockDbContext.Object, _mockCache.Object);
 	}
 

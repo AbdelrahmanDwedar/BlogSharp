@@ -3,7 +3,7 @@ using System.Text.Json;
 
 namespace BlogSharp.Services;
 
-public class RedisCache : IRedisCache
+public class RedisCache : ICache
 {
 	private readonly IDistributedCache _distributedCache;
 

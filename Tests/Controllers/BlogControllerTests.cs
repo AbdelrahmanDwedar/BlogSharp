@@ -12,14 +12,14 @@ namespace BlogSharp.Tests.Controllers;
 public class BlogControllerTests
 {
 	private readonly Mock<BlogDbContext> _mockDbContext;
-	private readonly Mock<IRedisCache> _mockCache;
+	private readonly Mock<ICache> _mockCache;
 	private readonly Mock<IQueueable> _mockQueue;
 	private readonly BlogController _controller;
 
 	public BlogControllerTests()
 	{
 		_mockDbContext = new Mock<BlogDbContext>(new DbContextOptions<BlogDbContext>());
-		_mockCache = new Mock<IRedisCache>();
+		_mockCache = new Mock<ICache>();
 		_mockQueue = new Mock<IQueueable>();
 		_controller = new BlogController(_mockDbContext.Object, _mockCache.Object, _mockQueue.Object);
 	}
