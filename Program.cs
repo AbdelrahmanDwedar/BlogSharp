@@ -23,11 +23,15 @@ builder.Services.AddDbContext<BlogDbContext>(options =>
         npgsqlOptions => npgsqlOptions.MigrationsAssembly(typeof(BlogDbContext).Assembly.GetName().Name))
 );
 
+// Add Redis caching service
 builder.Services.AddStackExchangeRedisCache(options =>
 {
     options.Configuration = builder.Configuration.GetConnectionString("RedisConnection");
-    options.InstanceName = "YourRedisInstanceName";
+    options.InstanceName = "BlogSharpRedisInstance";
 });
+
+// Register Redis-based cache service
+builder.Services.AddSingleton<IRedisCache, RedisCache>();
 
 builder.Services.AddSingleton<IConnectionFactory>(sp =>
 {

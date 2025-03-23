@@ -1,5 +1,6 @@
 using BlogSharp.Data;
 using BlogSharp.Entities;
+using BlogSharp.Services;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
@@ -10,10 +11,12 @@ namespace BlogSharp.Controllers;
 public class BlogController : ControllerBase
 {
 	private readonly BlogDbContext _context;
+	private readonly IRedisCache _cache;
 
-	public BlogController(BlogDbContext context)
+	public BlogController(BlogDbContext context, IRedisCache cache)
 	{
 		_context = context;
+		_cache = cache;
 	}
 
 	[HttpGet]
@@ -26,11 +29,18 @@ public class BlogController : ControllerBase
 	[HttpGet("{id}")]
 	public async Task<ActionResult<Blog>> GetBlogById(Guid id)
 	{
-		var blog = await _context.Blogs.Include(b => b.User).FirstOrDefaultAsync(b => b.Id == id);
+		var cacheKey = $"Blog_{id}";
+		var blog = await _cache.GetAsync<Blog>(cacheKey);
 
 		if (blog == null)
 		{
-			return NotFound();
+			blog = await _context.Blogs.Include(b => b.User).FirstOrDefaultAsync(b => b.Id == id);
+			if (blog == null)
+			{
+				return NotFound();
+			}
+
+			await _cache.SetAsync(cacheKey, blog, TimeSpan.FromMinutes(30));
 		}
 
 		return Ok(blog);
@@ -67,6 +77,9 @@ public class BlogController : ControllerBase
 		_context.Entry(blog).State = EntityState.Modified;
 		await _context.SaveChangesAsync();
 
+		var cacheKey = $"Blog_{id}";
+		await _cache.RemoveAsync(cacheKey); // Invalidate cache
+
 		return NoContent();
 	}
 
@@ -81,6 +94,9 @@ public class BlogController : ControllerBase
 
 		_context.Blogs.Remove(blog);
 		await _context.SaveChangesAsync();
+
+		var cacheKey = $"Blog_{id}";
+		await _cache.RemoveAsync(cacheKey); // Invalidate cache
 
 		return NoContent();
 	}

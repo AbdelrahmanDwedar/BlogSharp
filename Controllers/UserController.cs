@@ -1,6 +1,7 @@
 using BlogSharp.Data;
 using BlogSharp.Dtos;
 using BlogSharp.Entities;
+using BlogSharp.Services;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
@@ -11,10 +12,12 @@ namespace MyApp.Namespace;
 public class UserController : ControllerBase
 {
     private readonly BlogDbContext _context;
+    private readonly IRedisCache _cache;
 
-    public UserController(BlogDbContext context)
+    public UserController(BlogDbContext context, IRedisCache cache)
     {
         _context = context;
+        _cache = cache;
     }
 
     [HttpGet]
@@ -25,13 +28,20 @@ public class UserController : ControllerBase
     }
 
     [HttpGet("{id}")]
-    public async Task<ActionResult<User>> GetUserById(int id)
+    public async Task<ActionResult<User>> GetUserById(Guid id)
     {
-        var user = await _context.Users.FindAsync(id);
+        var cacheKey = $"User_{id}";
+        var user = await _cache.GetAsync<User>(cacheKey);
 
         if (user == null)
         {
-            return NotFound();
+            user = await _context.Users.FindAsync(id);
+            if (user == null)
+            {
+                return NotFound();
+            }
+
+            await _cache.SetAsync(cacheKey, user, TimeSpan.FromMinutes(30));
         }
 
         return Ok(user);
@@ -62,7 +72,7 @@ public class UserController : ControllerBase
     }
 
     [HttpPut("{id}")]
-    public async Task<IActionResult> UpdateUser(int id, UpdateUser updatedUser)
+    public async Task<IActionResult> UpdateUser(Guid id, UpdateUser updatedUser)
     {
         var user = await _context.Users.FindAsync(id);
         if (user == null)
@@ -77,22 +87,10 @@ public class UserController : ControllerBase
         user.BirthDate ??= updatedUser.BirthDate;
 
         _context.Entry(user).State = EntityState.Modified;
+        await _context.SaveChangesAsync();
 
-        try
-        {
-            await _context.SaveChangesAsync();
-        }
-        catch (DbUpdateConcurrencyException)
-        {
-            if (!UserExists(id))
-            {
-                return NotFound();
-            }
-            else
-            {
-                throw;
-            }
-        }
+        var cacheKey = $"User_{id}";
+        await _cache.RemoveAsync(cacheKey); // Invalidate cache
 
         return NoContent();
     }
@@ -108,6 +106,9 @@ public class UserController : ControllerBase
 
         _context.Users.Remove(user);
         await _context.SaveChangesAsync();
+
+        var cacheKey = $"User_{id}";
+        await _cache.RemoveAsync(cacheKey); // Invalidate cache
 
         return NoContent();
     }
