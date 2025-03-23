@@ -12,11 +12,13 @@ public class BlogController : ControllerBase
 {
 	private readonly BlogDbContext _context;
 	private readonly IRedisCache _cache;
+	private readonly IQueueable _queue;
 
-	public BlogController(BlogDbContext context, IRedisCache cache)
+	public BlogController(BlogDbContext context, IRedisCache cache, IQueueable queue)
 	{
 		_context = context;
 		_cache = cache;
+		_queue = queue;
 	}
 
 	[HttpGet]
@@ -47,18 +49,16 @@ public class BlogController : ControllerBase
 	}
 
 	[HttpPost]
-	public async Task<ActionResult<Blog>> AddNewBlog(Blog newBlog)
+	public async Task<ActionResult> AddNewBlog(Blog newBlog)
 	{
 		if (newBlog == null)
 		{
 			return BadRequest("Invalid blog data.");
 		}
 
-		newBlog.PublishDate = DateTime.UtcNow;
-		_context.Blogs.Add(newBlog);
-		await _context.SaveChangesAsync();
+		await _queue.EnqueueAsync("BlogQueue", newBlog);
 
-		return CreatedAtAction(nameof(GetBlogById), new { id = newBlog.Id }, newBlog);
+		return Accepted("Your blog is being processed.");
 	}
 
 	[HttpPut("{id}")]

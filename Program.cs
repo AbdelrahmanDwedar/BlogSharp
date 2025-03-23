@@ -59,34 +59,42 @@ builder.Services.AddTransient<IModel>(sp =>
 });
 
 builder.Services.AddControllers();
-
+builder.Services.AddSingleton<IQueueable, RabbitMQQueue>();
 builder.Services.AddEndpointsApiExplorer();
+builder.Services.AddSwaggerGen(); ;
+
+builder.Services.AddHostedService<BlogConsumer>(); ntsApiExplorer();
 builder.Services.AddSwaggerGen();
-
 var app = builder.Build();
-
+ar app = builder.Build();
 using (var scope = app.Services.CreateScope())
 {
+    reateScope())
     var dbContext = scope.ServiceProvider.GetRequiredService<BlogDbContext>();
-    dbContext.Database.Migrate();
+    dbContext.Database.Migrate(); var dbContext = scope.ServiceProvider.GetRequiredService<BlogDbContext>();
 }
 
 if (app.Environment.IsDevelopment())
 {
+    sDevelopment())
     app.UseDeveloperExceptionPage();
-    app.UseSwagger();
+    app.UseSwagger(); pp.UseDeveloperExceptionPage();
     app.UseSwaggerUI(c =>
-    {
+    {.UseSwaggerUI(c =>
         c.SwaggerEndpoint("/swagger/v1/swagger.json", "Your API V1");
-    });
+    {
+    }); c.SwaggerEndpoint("/swagger/v1/swagger.json", "Your API V1");
 }
-
+}
 app.UseHttpsRedirection();
-
+app.UseHttpsRedirection();
 app.UseRouting();
-
+app.UseRouting();
 app.UseAuthorization();
-
+app.UseAuthorization();
+app.MapControllers();
 app.MapControllers();
 
+
+app.Run();
 app.Run();
