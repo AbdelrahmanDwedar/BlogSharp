@@ -1,6 +1,7 @@
 using BlogSharp.Services;
 using Microsoft.Extensions.Caching.Distributed;
 using Moq;
+using System.Text;
 using System.Text.Json;
 using Xunit;
 
@@ -23,8 +24,8 @@ public class RedisCacheTests
 		// Arrange
 		var key = "testKey";
 		var value = "testValue";
-		_mockCache.Setup(c => c.GetStringAsync(key, default))
-			.ReturnsAsync(JsonSerializer.Serialize(value));
+		_mockCache.Setup(c => c.GetAsync(key, default))
+			.ReturnsAsync(Encoding.UTF8.GetBytes(JsonSerializer.Serialize(value)));
 
 		// Act
 		var result = await _redisCache.GetAsync<string>(key);
@@ -38,8 +39,8 @@ public class RedisCacheTests
 	{
 		// Arrange
 		var key = "nonExistentKey";
-		_mockCache.Setup(c => c.GetStringAsync(key, default))
-			.ReturnsAsync((string?)null);
+		_mockCache.Setup(c => c.GetAsync(key, default))
+			.ReturnsAsync((byte[]?)null);
 
 		// Act
 		var result = await _redisCache.GetAsync<string>(key);
@@ -60,9 +61,9 @@ public class RedisCacheTests
 		await _redisCache.SetAsync(key, value, expiration);
 
 		// Assert
-		_mockCache.Verify(c => c.SetStringAsync(
+		_mockCache.Verify(c => c.SetAsync(
 			key,
-			It.IsAny<string>(),
+			It.IsAny<byte[]>(),
 			It.Is<DistributedCacheEntryOptions>(o => o.AbsoluteExpirationRelativeToNow == expiration),
 			default
 		), Times.Once);

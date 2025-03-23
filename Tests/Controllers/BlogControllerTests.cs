@@ -44,7 +44,7 @@ public class BlogControllerTests
 				}
 			}
 		};
-		_mockDbContext.Setup(db => db.Blogs).ReturnsDbSet(blogs);
+		_mockDbContext.Setup(db => db.Set<Blog>()).ReturnsDbSet(blogs);
 
 		// Act
 		var result = await _controller.GetAllBlogs();
@@ -87,8 +87,7 @@ public class BlogControllerTests
 	{
 		// Arrange
 		var blogId = Guid.NewGuid();
-		_mockCache.Setup(c => c.GetAsync<Blog>($"Blog_{blogId}")).ReturnsAsync((Blog?)null);
-		_mockDbContext.Setup(db => db.Blogs.FindAsync(blogId)).ReturnsAsync((Blog?)null);
+		_mockDbContext.Setup(db => db.Set<Blog>().FindAsync(blogId)).ReturnsAsync((Blog?)null);
 
 		// Act
 		var result = await _controller.GetBlogById(blogId);
@@ -152,7 +151,7 @@ public class BlogControllerTests
 				Phone = "0987654321"
 			}
 		};
-		_mockDbContext.Setup(db => db.Blogs.FindAsync(blogId)).ReturnsAsync(existingBlog);
+		_mockDbContext.Setup(db => db.Set<Blog>()).ReturnsDbSet(new List<Blog> { existingBlog });
 
 		// Act
 		var result = await _controller.UpdateBlog(blogId, updatedBlog);
@@ -181,7 +180,8 @@ public class BlogControllerTests
 				Phone = "1234567890"
 			}
 		};
-		_mockDbContext.Setup(db => db.Blogs.FindAsync(blogId)).ReturnsAsync(blog);
+		var blogs = new List<Blog> { blog };
+		_mockDbContext.Setup(db => db.Set<Blog>()).ReturnsDbSet(blogs);
 
 		// Act
 		var result = await _controller.DeleteBlog(blogId);

@@ -37,7 +37,7 @@ public class UserControllerTests
 				Phone = "1234567890"
 			}
 		};
-		_mockDbContext.Setup(db => db.Users).ReturnsDbSet(users);
+		_mockDbContext.Setup(db => db.Set<User>()).ReturnsDbSet(users);
 
 		// Act
 		var result = await _controller.GetAllUsers();
@@ -76,7 +76,7 @@ public class UserControllerTests
 		// Arrange
 		var userId = Guid.NewGuid();
 		_mockCache.Setup(c => c.GetAsync<User>($"User_{userId}")).ReturnsAsync((User?)null);
-		_mockDbContext.Setup(db => db.Users.FindAsync(userId)).ReturnsAsync((User?)null);
+		_mockDbContext.Setup(db => db.Set<User>()).ReturnsDbSet(new List<User>());
 
 		// Act
 		var result = await _controller.GetUserById(userId);

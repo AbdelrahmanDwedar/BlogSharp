@@ -49,14 +49,21 @@ public class RabbitMQQueueTests
 		var body = Encoding.UTF8.GetBytes(JsonSerializer.Serialize(message));
 		var consumer = new EventingBasicConsumer(_mockChannel.Object);
 
-		_mockChannel.Setup(c => c.BasicConsume(queueName, false, It.IsAny<string>(), It.IsAny<bool>(), It.IsAny<bool>(), It.IsAny<IDictionary<string, object>>(), It.IsAny<IBasicConsumer>()))
-			.Callback<string, bool, string, bool, bool, IDictionary<string, object>, IBasicConsumer>((_, _, _, _, _, _, cons) =>
+		_mockChannel.Setup(c => c.BasicConsume(
+			queueName,
+			false,
+			It.IsAny<string>(),
+			It.IsAny<bool>(),
+			It.IsAny<bool>(),
+			It.IsAny<IDictionary<string, object>>(),
+			It.IsAny<IBasicConsumer>()
+		)).Callback<string, bool, string, bool, bool, IDictionary<string, object>, IBasicConsumer>((_, _, _, _, _, _, cons) =>
+		{
+			consumer.Received += (model, ea) =>
 			{
-				consumer.Received += (model, ea) =>
-				{
-					consumer.HandleBasicDeliver("", ea.DeliveryTag, false, "", "", null, body);
-				};
-			});
+				consumer.HandleBasicDeliver("", ea.DeliveryTag, false, "", "", null, body);
+			};
+		});
 
 		// Act
 		var result = await _rabbitMQQueue.DequeueAsync<string>(queueName);

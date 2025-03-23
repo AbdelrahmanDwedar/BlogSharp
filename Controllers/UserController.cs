@@ -23,25 +23,22 @@ public class UserController : ControllerBase
     [HttpGet]
     public async Task<ActionResult<IEnumerable<User>>> GetAllUsers()
     {
-        var users = await _context.Users.Where(u => !u.isDeleted).ToListAsync();
+        var users = await (_context.Users?.Where(u => !u.isDeleted).ToListAsync() ?? Task.FromResult(new List<User>()));
         return Ok(users);
     }
 
     [HttpGet("{id}")]
     public async Task<ActionResult<User>> GetUserById(Guid id)
     {
-        var cacheKey = $"User_{id}";
-        var user = await _cache.GetAsync<User>(cacheKey);
+        var user = await _cache.GetAsync<User>($"User_{id}");
+        if (user == null)
+        {
+            user = await _context.Users.FirstOrDefaultAsync(u => u.Id == id && !u.isDeleted);
+        }
 
         if (user == null)
         {
-            user = await _context.Users.FindAsync(id);
-            if (user == null)
-            {
-                return NotFound();
-            }
-
-            await _cache.SetAsync(cacheKey, user, TimeSpan.FromMinutes(30));
+            return NotFound();
         }
 
         return Ok(user);

@@ -26,7 +26,7 @@ public class CommentControllerTests
 		// Arrange
 		var blogId = Guid.NewGuid();
 		var comments = new List<Comment> { new Comment(null!, null!, "Test Comment") { BlogId = blogId } };
-		_mockDbContext.Setup(db => db.Comments).ReturnsDbSet(comments);
+		_mockDbContext.Setup(db => db.Set<Comment>()).ReturnsDbSet(comments);
 
 		// Act
 		var result = await _controller.GetCommentsByBlog(blogId);
@@ -56,8 +56,10 @@ public class CommentControllerTests
 		// Arrange
 		var commentId = Guid.NewGuid();
 		var existingComment = new Comment(null!, null!, "Old Content") { Id = commentId };
+		var comments = new List<Comment> { existingComment };
+		_mockDbContext.Setup(db => db.Set<Comment>()).ReturnsDbSet(comments);
+
 		var updatedComment = new Comment(null!, null!, "New Content");
-		_mockDbContext.Setup(db => db.Comments.FindAsync(commentId)).ReturnsAsync(existingComment);
 
 		// Act
 		var result = await _controller.UpdateComment(commentId, updatedComment);
@@ -73,7 +75,8 @@ public class CommentControllerTests
 		// Arrange
 		var commentId = Guid.NewGuid();
 		var comment = new Comment(null!, null!, "Test Comment") { Id = commentId };
-		_mockDbContext.Setup(db => db.Comments.FindAsync(commentId)).ReturnsAsync(comment);
+		var comments = new List<Comment> { comment };
+		_mockDbContext.Setup(db => db.Set<Comment>()).ReturnsDbSet(comments);
 
 		// Act
 		var result = await _controller.DeleteComment(commentId);
