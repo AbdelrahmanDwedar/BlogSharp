@@ -35,8 +35,11 @@ public class BlogDbContext : IdentityDbContext<User, IdentityRole<Guid>, Guid>
 
         modelBuilder.Entity<Blog>(entity =>
         {
-            entity.HasIndex(blog => EF.Functions.ToTsVector("english", blog.Content))
-                  .HasMethod("GIN");
+            if (Database.ProviderName != "Microsoft.EntityFrameworkCore.InMemory")
+            {
+                entity.HasIndex(blog => EF.Functions.ToTsVector("english", blog.Content))
+                      .HasMethod("GIN");
+            }
             entity.HasIndex(blog => blog.UserId);
         });
 
