@@ -24,7 +24,7 @@ namespace BlogSharp.Migrations
                         type: "timestamp with time zone",
                         nullable: false
                     ),
-                    BirthDate = table.Column<DateOnly>(type: "date", nullable: true)
+                    BirthDate = table.Column<DateOnly>(type: "date", nullable: true),
                 },
                 constraints: table =>
                 {

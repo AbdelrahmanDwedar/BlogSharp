@@ -1,17 +1,18 @@
+using BlogSharp.Consumers; // Add this for BlogConsumer
+using BlogSharp.Data;
+using BlogSharp.Entities;
+using BlogSharp.Services; // Correct namespace for ICache, RedisCache, IQueueable, and RabbitMQQueue
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using RabbitMQ.Client;
-using BlogSharp.Entities;
-using BlogSharp.Data;
-using BlogSharp.Services; // Correct namespace for ICache, RedisCache, IQueueable, and RabbitMQQueue
-using BlogSharp.Consumers; // Add this for BlogConsumer
 
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Configuration.AddEnvironmentVariables();
 builder.Configuration.AddJsonFile("appsettings.json", optional: true, reloadOnChange: true);
 
-builder.Services.AddIdentity<User, IdentityRole<Guid>>(options =>
+builder
+    .Services.AddIdentity<User, IdentityRole<Guid>>(options =>
     {
         options.User.RequireUniqueEmail = true;
         options.Password.RequireDigit = true;
@@ -21,8 +22,11 @@ builder.Services.AddIdentity<User, IdentityRole<Guid>>(options =>
     .AddApiEndpoints();
 
 builder.Services.AddDbContext<BlogDbContext>(options =>
-    options.UseNpgsql(builder.Configuration.GetConnectionString("PostgresConnection"),
-        npgsqlOptions => npgsqlOptions.MigrationsAssembly(typeof(BlogDbContext).Assembly.GetName().Name))
+    options.UseNpgsql(
+        builder.Configuration.GetConnectionString("PostgresConnection"),
+        npgsqlOptions =>
+            npgsqlOptions.MigrationsAssembly(typeof(BlogDbContext).Assembly.GetName().Name)
+    )
 );
 
 // Add Redis caching service
@@ -43,7 +47,7 @@ builder.Services.AddSingleton<IConnectionFactory>(sp =>
     var factory = new ConnectionFactory()
     {
         Uri = new Uri(rabbitMqConnectionString),
-        DispatchConsumersAsync = true
+        DispatchConsumersAsync = true,
     };
     return factory;
 });

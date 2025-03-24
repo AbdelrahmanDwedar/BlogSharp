@@ -23,7 +23,10 @@ public class UserController : ControllerBase
     [HttpGet]
     public async Task<ActionResult<IEnumerable<User>>> GetAllUsers()
     {
-        var users = await (_context.Users?.Where(u => !u.isDeleted).ToListAsync() ?? Task.FromResult(new List<User>()));
+        var users = await (
+            _context.Users?.Where(u => !u.isDeleted).ToListAsync()
+            ?? Task.FromResult(new List<User>())
+        );
         return Ok(users);
     }
 
@@ -59,7 +62,7 @@ public class UserController : ControllerBase
             Password = newUser.Password,
             Phone = newUser.Phone,
             BirthDate = newUser.BirthDate,
-            CreatedAt = DateTime.UtcNow
+            CreatedAt = DateTime.UtcNow,
         };
 
         _context.Users.Add(user);

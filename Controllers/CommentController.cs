@@ -9,76 +9,76 @@ namespace BlogSharp.Controllers;
 [ApiController]
 public class CommentController : ControllerBase
 {
-	private readonly BlogDbContext _context;
+    private readonly BlogDbContext _context;
 
-	public CommentController(BlogDbContext context)
-	{
-		_context = context;
-	}
+    public CommentController(BlogDbContext context)
+    {
+        _context = context;
+    }
 
-	[HttpGet("blog/{blogId}")]
-	public async Task<ActionResult<IEnumerable<Comment>>> GetCommentsByBlog(Guid blogId)
-	{
-		var comments = await _context.Comments
-			.Where(c => c.Blog.Id == blogId)
-			.ToListAsync();
+    [HttpGet("blog/{blogId}")]
+    public async Task<ActionResult<IEnumerable<Comment>>> GetCommentsByBlog(Guid blogId)
+    {
+        var comments = await _context.Comments.Where(c => c.Blog.Id == blogId).ToListAsync();
 
-		return Ok(comments);
-	}
+        return Ok(comments);
+    }
 
-	[HttpGet("user/{userId}")]
-	public async Task<ActionResult<IEnumerable<Comment>>> GetCommentsByUser(Guid userId)
-	{
-		var comments = await _context.Comments
-			.Where(c => c.UserId == userId)
-			.ToListAsync();
+    [HttpGet("user/{userId}")]
+    public async Task<ActionResult<IEnumerable<Comment>>> GetCommentsByUser(Guid userId)
+    {
+        var comments = await _context.Comments.Where(c => c.UserId == userId).ToListAsync();
 
-		return Ok(comments);
-	}
+        return Ok(comments);
+    }
 
-	[HttpPost]
-	public async Task<ActionResult<Comment>> AddComment(Comment newComment)
-	{
-		if (newComment == null || newComment.Blog == null)
-		{
-			return BadRequest("Invalid comment data.");
-		}
+    [HttpPost]
+    public async Task<ActionResult<Comment>> AddComment(Comment newComment)
+    {
+        if (newComment == null || newComment.Blog == null)
+        {
+            return BadRequest("Invalid comment data.");
+        }
 
-		_context.Comments.Add(newComment);
-		await _context.SaveChangesAsync();
+        _context.Comments.Add(newComment);
+        await _context.SaveChangesAsync();
 
-		return CreatedAtAction(nameof(GetCommentsByBlog), new { blogId = newComment.Blog.Id }, newComment);
-	}
+        return CreatedAtAction(
+            nameof(GetCommentsByBlog),
+            new { blogId = newComment.Blog.Id },
+            newComment
+        );
+    }
 
-	[HttpPut("{id}")]
-	public async Task<IActionResult> UpdateComment(Guid id, Comment updatedComment)
-	{
-		var comment = await _context.Comments.FindAsync(id);
-		if (comment == null)
-		{
-			return NotFound();
-		}
+    [HttpPut("{id}")]
+    public async Task<IActionResult> UpdateComment(Guid id, Comment updatedComment)
+    {
+        var comment = await _context.Comments.FindAsync(id);
+        if (comment == null)
+        {
+            return NotFound();
+        }
 
-		comment.Content = updatedComment.Content ?? comment.Content;
+        comment.Content = updatedComment.Content ?? comment.Content;
 
-		_context.Entry(comment).State = EntityState.Modified;
-		await _context.SaveChangesAsync();
+        _context.Entry(comment).State = EntityState.Modified;
+        await _context.SaveChangesAsync();
 
-		return NoContent();
-	}
+        return NoContent();
+    }
 
-	[HttpDelete("{id}")]
-	public async Task<IActionResult> DeleteComment(Guid id)
-	{
-		var comment = await _context.Comments.FindAsync(id);
-		if (comment == null)
-		{
-			return NotFound();
-		}
+    [HttpDelete("{id}")]
+    public async Task<IActionResult> DeleteComment(Guid id)
+    {
+        var comment = await _context.Comments.FindAsync(id);
+        if (comment == null)
+        {
+            return NotFound();
+        }
 
-		_context.Comments.Remove(comment);
-		await _context.SaveChangesAsync();
+        _context.Comments.Remove(comment);
+        await _context.SaveChangesAsync();
 
-		return NoContent();
-	}
+        return NoContent();
+    }
 }
