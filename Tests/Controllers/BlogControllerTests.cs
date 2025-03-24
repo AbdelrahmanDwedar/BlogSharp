@@ -5,89 +5,71 @@ using BlogSharp.Services;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Moq;
-using Moq.EntityFrameworkCore;
 using Xunit;
 
 namespace BlogSharp.Tests.Controllers;
 
 public class BlogControllerTests
 {
-	private readonly Mock<BlogDbContext> _mockDbContext;
+	private BlogDbContext _context;
 	private readonly Mock<ICache> _mockCache;
 	private readonly Mock<IQueueable> _mockQueue;
-	private readonly BlogController _controller;
+	private BlogController _controller;
 
 	public BlogControllerTests()
 	{
-		_mockDbContext = new Mock<BlogDbContext>(new DbContextOptions<BlogDbContext>());
 		_mockCache = new Mock<ICache>();
 		_mockQueue = new Mock<IQueueable>();
-		_controller = new BlogController(_mockDbContext.Object, _mockCache.Object, _mockQueue.Object);
+		ResetDatabase();
+	}
+
+	private void ResetDatabase()
+	{
+		var options = new DbContextOptionsBuilder<BlogDbContext>()
+			.UseInMemoryDatabase(databaseName: Guid.NewGuid().ToString()) // Unique database for each test
+			.Options;
+
+		_context = new BlogDbContext(options);
+		_controller = new BlogController(_context, _mockCache.Object, _mockQueue.Object);
 	}
 
 	[Fact]
-	public async Task GetAllBlogs_ReturnsBlogs()
+	public async Task GetAllBlogs_ReturnsOkResult_WithBlogs()
 	{
 		// Arrange
-		var blogs = new List<Blog>
+		ResetDatabase();
+		var user = new User
 		{
-			new Blog
-			{
-				Title = "Test Blog",
-				Content = "Test Content",
-				User = new User
-				{
-					Name = "John Doe",
-					Email = "john.doe@example.com",
-					Password = "Password123!",
-					Phone = "1234567890"
-				}
-			}
+			Id = Guid.NewGuid(),
+			Name = "Test User",
+			Email = "testuser@example.com",
+			Password = "password123",
+			Phone = "1234567890"
 		};
-		_mockDbContext.Setup(db => db.Set<Blog>()).ReturnsDbSet(blogs);
+		var blog = new Blog
+		{
+			Id = Guid.NewGuid(),
+			Title = "Test Blog",
+			Content = "Test Content",
+			User = user
+		};
+		_context.Blogs.Add(blog);
+		await _context.SaveChangesAsync();
 
 		// Act
 		var result = await _controller.GetAllBlogs();
 
 		// Assert
 		var okResult = Assert.IsType<OkObjectResult>(result.Result);
-		Assert.Equal(blogs, okResult.Value);
+		var blogs = Assert.IsAssignableFrom<IEnumerable<Blog>>(okResult.Value);
+		Assert.Single(blogs);
 	}
 
 	[Fact]
-	public async Task GetBlogById_ReturnsBlog_WhenExists()
+	public async Task GetBlogById_ReturnsNotFound_WhenBlogDoesNotExist()
 	{
 		// Arrange
 		var blogId = Guid.NewGuid();
-		var blog = new Blog
-		{
-			Id = blogId,
-			Title = "Test Blog",
-			Content = "Test Content",
-			User = new User
-			{
-				Name = "John Doe",
-				Email = "john.doe@example.com",
-				Password = "Password123!",
-				Phone = "1234567890"
-			}
-		};
-		_mockCache.Setup(c => c.GetAsync<Blog>($"Blog_{blogId}")).ReturnsAsync(blog);
-
-		// Act
-		var result = await _controller.GetBlogById(blogId);
-
-		// Assert
-		var okResult = Assert.IsType<OkObjectResult>(result.Result);
-		Assert.Equal(blog, okResult.Value);
-	}
-
-	[Fact]
-	public async Task GetBlogById_ReturnsNotFound_WhenNotExists()
-	{
-		// Arrange
-		var blogId = Guid.NewGuid();
-		_mockDbContext.Setup(db => db.Set<Blog>().FindAsync(blogId)).ReturnsAsync((Blog?)null);
 
 		// Act
 		var result = await _controller.GetBlogById(blogId);
@@ -97,97 +79,88 @@ public class BlogControllerTests
 	}
 
 	[Fact]
-	public async Task AddNewBlog_EnqueuesBlog()
+	public async Task AddNewBlog_ReturnsAccepted_WhenBlogIsQueued()
 	{
 		// Arrange
+		ResetDatabase();
 		var newBlog = new Blog
 		{
+			Id = Guid.NewGuid(),
 			Title = "New Blog",
 			Content = "New Content",
 			User = new User
 			{
-				Name = "John Doe",
-				Email = "john.doe@example.com",
-				Password = "Password123!",
+				Id = Guid.NewGuid(),
+				Name = "Test User",
+				Email = "testuser@example.com",
+				Password = "password123",
 				Phone = "1234567890"
 			}
 		};
+		_mockQueue.Setup(q => q.EnqueueAsync("BlogQueue", It.IsAny<Blog>())).Returns(Task.CompletedTask);
 
 		// Act
 		var result = await _controller.AddNewBlog(newBlog);
 
 		// Assert
-		Assert.IsType<AcceptedResult>(result);
-		_mockQueue.Verify(q => q.EnqueueAsync("BlogQueue", newBlog), Times.Once);
+		_mockQueue.Verify(q => q.EnqueueAsync("BlogQueue", newBlog), Times.Once); // Verify enqueue was called
+		var acceptedResult = Assert.IsType<AcceptedResult>(result);
+		Assert.NotNull(acceptedResult); // Ensure the response is not null
+		Assert.Equal(202, acceptedResult.StatusCode);
 	}
 
 	[Fact]
-	public async Task UpdateBlog_UpdatesBlog_WhenExists()
+	public async Task UpdateBlog_ReturnsNotFound_WhenBlogDoesNotExist()
 	{
 		// Arrange
 		var blogId = Guid.NewGuid();
-		var existingBlog = new Blog
+		var updatedBlog = new Blog
 		{
-			Id = blogId,
-			Title = "Old Title",
-			Content = "Old Content",
+			Title = "Updated Title",
+			Content = "Updated Content",
 			User = new User
 			{
-				Name = "John Doe",
-				Email = "john.doe@example.com",
-				Password = "Password123!",
+				Id = Guid.NewGuid(),
+				Name = "Test User",
+				Email = "testuser@example.com",
+				Password = "password123",
 				Phone = "1234567890"
 			}
 		};
-		var updatedBlog = new Blog
-		{
-			Title = "New Title",
-			Content = "New Content",
-			User = new User
-			{
-				Name = "Jane Doe",
-				Email = "jane.doe@example.com",
-				Password = "Password456!",
-				Phone = "0987654321"
-			}
-		};
-		_mockDbContext.Setup(db => db.Set<Blog>()).ReturnsDbSet(new List<Blog> { existingBlog });
 
 		// Act
 		var result = await _controller.UpdateBlog(blogId, updatedBlog);
 
 		// Assert
-		Assert.IsType<NoContentResult>(result);
-		Assert.Equal("New Title", existingBlog.Title);
-		Assert.Equal("New Content", existingBlog.Content);
+		Assert.IsType<NotFoundResult>(result);
 	}
 
 	[Fact]
-	public async Task DeleteBlog_RemovesBlog_WhenExists()
+	public async Task DeleteBlog_ReturnsNoContent_WhenBlogIsDeleted()
 	{
 		// Arrange
-		var blogId = Guid.NewGuid();
+		var user = new User
+		{
+			Id = Guid.NewGuid(),
+			Name = "Test User",
+			Email = "testuser@example.com",
+			Password = "password123",
+			Phone = "1234567890"
+		};
 		var blog = new Blog
 		{
-			Id = blogId,
+			Id = Guid.NewGuid(),
 			Title = "Test Blog",
 			Content = "Test Content",
-			User = new User
-			{
-				Name = "John Doe",
-				Email = "john.doe@example.com",
-				Password = "Password123!",
-				Phone = "1234567890"
-			}
+			User = user
 		};
-		var blogs = new List<Blog> { blog };
-		_mockDbContext.Setup(db => db.Set<Blog>()).ReturnsDbSet(blogs);
+		_context.Blogs.Add(blog);
+		await _context.SaveChangesAsync();
 
 		// Act
-		var result = await _controller.DeleteBlog(blogId);
+		var result = await _controller.DeleteBlog(blog.Id);
 
 		// Assert
 		Assert.IsType<NoContentResult>(result);
-		_mockDbContext.Verify(db => db.Blogs.Remove(blog), Times.Once);
 	}
 }

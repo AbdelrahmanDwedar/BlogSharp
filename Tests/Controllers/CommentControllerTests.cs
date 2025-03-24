@@ -3,21 +3,27 @@ using BlogSharp.Data;
 using BlogSharp.Entities;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using Moq;
-using Moq.EntityFrameworkCore;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading.Tasks;
 using Xunit;
 
 namespace BlogSharp.Tests.Controllers;
 
 public class CommentControllerTests
 {
-	private readonly Mock<BlogDbContext> _mockDbContext;
+	private readonly BlogDbContext _context;
 	private readonly CommentController _controller;
 
 	public CommentControllerTests()
 	{
-		_mockDbContext = new Mock<BlogDbContext>(new DbContextOptions<BlogDbContext>());
-		_controller = new CommentController(_mockDbContext.Object);
+		var options = new DbContextOptionsBuilder<BlogDbContext>()
+			.UseInMemoryDatabase(Guid.NewGuid().ToString())
+			.Options;
+
+		_context = new BlogDbContext(options);
+		_controller = new CommentController(_context);
 	}
 
 	[Fact]
@@ -25,64 +31,138 @@ public class CommentControllerTests
 	{
 		// Arrange
 		var blogId = Guid.NewGuid();
-		var comments = new List<Comment> { new Comment(null!, null!, "Test Comment") { BlogId = blogId } };
-		_mockDbContext.Setup(db => db.Set<Comment>()).ReturnsDbSet(comments);
+		var blog = new Blog
+		{
+			Id = blogId,
+			Title = "Test Blog",
+			Content = "Test Content",
+			User = new User
+			{
+				Id = Guid.NewGuid(),
+				Name = "Test User",
+				Email = "testuser@example.com",
+				Password = "TestPassword123",
+				Phone = "123-456-7890"
+			}
+		};
+		_context.Add(blog);
+		await _context.SaveChangesAsync();
+
+		_context.Comments.AddRange(new List<Comment>
+		{
+			new Comment { Id = Guid.NewGuid(), BlogId = blogId, Blog = blog, UserId = Guid.NewGuid(), Content = "Test Comment 1" },
+			new Comment { Id = Guid.NewGuid(), BlogId = blogId, Blog = blog, UserId = Guid.NewGuid(), Content = "Test Comment 2" }
+		});
+		await _context.SaveChangesAsync();
 
 		// Act
 		var result = await _controller.GetCommentsByBlog(blogId);
 
 		// Assert
 		var okResult = Assert.IsType<OkObjectResult>(result.Result);
-		Assert.Equal(comments, okResult.Value);
+		var returnedComments = Assert.IsType<List<Comment>>(okResult.Value);
+		Assert.Equal(2, returnedComments.Count);
 	}
 
 	[Fact]
-	public async Task AddComment_AddsComment()
+	public async Task GetCommentsByUser_ReturnsComments()
 	{
 		// Arrange
-		var newComment = new Comment(null!, null!, "New Comment");
+		var userId = Guid.NewGuid();
+		_context.Comments.AddRange(new List<Comment>
+		{
+			new Comment { Id = Guid.NewGuid(), BlogId = Guid.NewGuid(), UserId = userId, Content = "Test Comment 1" },
+			new Comment { Id = Guid.NewGuid(), BlogId = Guid.NewGuid(), UserId = userId, Content = "Test Comment 2" }
+		});
+		await _context.SaveChangesAsync();
+
+		// Act
+		var result = await _controller.GetCommentsByUser(userId);
+
+		// Assert
+		var okResult = Assert.IsType<OkObjectResult>(result.Result);
+		var returnedComments = Assert.IsType<List<Comment>>(okResult.Value);
+		Assert.Equal(2, returnedComments.Count);
+	}
+
+	[Fact]
+	public async Task AddComment_ValidComment_ReturnsCreatedComment()
+	{
+		// Arrange
+		var blog = new Blog
+		{
+			Id = Guid.NewGuid(),
+			Title = "Test Blog",
+			Content = "Test Content",
+			User = new User
+			{
+				Id = Guid.NewGuid(),
+				Name = "Test User",
+				Email = "testuser@example.com",
+				Password = "TestPassword123",
+				Phone = "123-456-7890"
+			}
+		};
+		_context.Add(blog);
+		await _context.SaveChangesAsync();
+
+		var newComment = new Comment
+		{
+			Id = Guid.NewGuid(),
+			BlogId = blog.Id,
+			Blog = blog,
+			UserId = Guid.NewGuid(),
+			Content = "New Comment"
+		};
 
 		// Act
 		var result = await _controller.AddComment(newComment);
 
 		// Assert
-		Assert.IsType<CreatedAtActionResult>(result.Result);
-		_mockDbContext.Verify(db => db.Comments.Add(newComment), Times.Once);
+		var createdResult = Assert.IsType<CreatedAtActionResult>(result.Result);
+		var returnedComment = Assert.IsType<Comment>(createdResult.Value);
+		Assert.Equal(newComment.Content, returnedComment.Content);
 	}
 
 	[Fact]
-	public async Task UpdateComment_UpdatesComment_WhenExists()
+	public async Task UpdateComment_ValidId_UpdatesComment()
 	{
 		// Arrange
 		var commentId = Guid.NewGuid();
-		var existingComment = new Comment(null!, null!, "Old Content") { Id = commentId };
-		var comments = new List<Comment> { existingComment };
-		_mockDbContext.Setup(db => db.Set<Comment>()).ReturnsDbSet(comments);
+		var existingComment = new Comment { Id = commentId, Content = "Old Content" };
+		_context.Comments.Add(existingComment);
+		await _context.SaveChangesAsync();
 
-		var updatedComment = new Comment(null!, null!, "New Content");
+		var updatedComment = new Comment { Content = "Updated Content" };
 
 		// Act
 		var result = await _controller.UpdateComment(commentId, updatedComment);
 
 		// Assert
 		Assert.IsType<NoContentResult>(result);
-		Assert.Equal("New Content", existingComment.Content);
+		Assert.Equal("Updated Content", existingComment.Content);
 	}
 
 	[Fact]
-	public async Task DeleteComment_RemovesComment_WhenExists()
+	public async Task DeleteComment_ValidId_DeletesComment()
 	{
 		// Arrange
 		var commentId = Guid.NewGuid();
-		var comment = new Comment(null!, null!, "Test Comment") { Id = commentId };
-		var comments = new List<Comment> { comment };
-		_mockDbContext.Setup(db => db.Set<Comment>()).ReturnsDbSet(comments);
+		var existingComment = new Comment
+		{
+			Id = commentId,
+			Content = "Test Content",
+			BlogId = Guid.NewGuid(),
+			UserId = Guid.NewGuid()
+		};
+		_context.Comments.Add(existingComment);
+		await _context.SaveChangesAsync();
 
 		// Act
 		var result = await _controller.DeleteComment(commentId);
 
 		// Assert
 		Assert.IsType<NoContentResult>(result);
-		_mockDbContext.Verify(db => db.Comments.Remove(comment), Times.Once);
+		Assert.Null(await _context.Comments.FindAsync(commentId));
 	}
 }

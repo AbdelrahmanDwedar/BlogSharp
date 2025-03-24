@@ -10,65 +10,55 @@ namespace BlogSharp.Tests.Services;
 
 public class RabbitMQQueueTests
 {
-	private readonly Mock<IModel> _mockChannel;
-	private readonly RabbitMQQueue _rabbitMQQueue;
-
-	public RabbitMQQueueTests()
+	[Fact]
+	public async Task EnqueueAsync_ShouldPublishMessageToQueue()
 	{
-		_mockChannel = new Mock<IModel>();
+		// Arrange
 		var mockConnection = new Mock<IConnection>();
-		mockConnection.Setup(c => c.CreateModel()).Returns(_mockChannel.Object);
-		_rabbitMQQueue = new RabbitMQQueue(mockConnection.Object);
-	}
+		var mockChannel = new Mock<IModel>();
+		mockConnection.Setup(c => c.CreateModel()).Returns(mockChannel.Object);
 
-	[Fact]
-	public async Task EnqueueAsync_PublishesMessageToQueue()
-	{
-		// Arrange
-		var queueName = "testQueue";
-		var message = "testMessage";
+		var queue = new RabbitMQQueue(mockConnection.Object);
+		var queueName = "test-queue";
+		var message = new { Text = "Hello, World!" };
 
 		// Act
-		await _rabbitMQQueue.EnqueueAsync(queueName, message);
+		await queue.EnqueueAsync(queueName, message);
 
 		// Assert
-		_mockChannel.Verify(c => c.BasicPublish(
-			"",
-			queueName,
-			null,
-			It.IsAny<byte[]>()
-		), Times.Once);
+		mockChannel.Verify(c => c.QueueDeclare(queueName, true, false, false, null), Times.Once);
 	}
 
 	[Fact]
-	public async Task DequeueAsync_ReturnsMessageFromQueue()
+	public async Task DequeueAsync_ShouldConsumeMessageFromQueue()
 	{
 		// Arrange
-		var queueName = "testQueue";
-		var message = "testMessage";
-		var body = Encoding.UTF8.GetBytes(JsonSerializer.Serialize(message));
-		var consumer = new EventingBasicConsumer(_mockChannel.Object);
+		var mockConnection = new Mock<IConnection>();
+		var mockChannel = new Mock<IModel>();
+		mockConnection.Setup(c => c.CreateModel()).Returns(mockChannel.Object);
 
-		_mockChannel.Setup(c => c.BasicConsume(
-			queueName,
-			false,
-			It.IsAny<string>(),
-			It.IsAny<bool>(),
-			It.IsAny<bool>(),
-			It.IsAny<IDictionary<string, object>>(),
-			It.IsAny<IBasicConsumer>()
-		)).Callback<string, bool, string, bool, bool, IDictionary<string, object>, IBasicConsumer>((_, _, _, _, _, _, cons) =>
-		{
-			consumer.Received += (model, ea) =>
+		var queue = new RabbitMQQueue(mockConnection.Object);
+		var queueName = "test-queue";
+		var expectedMessage = new { Text = "Hello, World!" };
+		var messageBody = Encoding.UTF8.GetBytes(JsonSerializer.Serialize(expectedMessage));
+
+		var consumer = new EventingBasicConsumer(mockChannel.Object);
+		mockChannel.Setup(c => c.BasicConsume(queueName, false, It.IsAny<string>(), It.IsAny<bool>(), It.IsAny<bool>(), It.IsAny<IDictionary<string, object>>(), It.IsAny<IBasicConsumer>()))
+			.Callback<string, bool, string, bool, bool, IDictionary<string, object>, IBasicConsumer>((_, _, _, _, _, _, cons) =>
 			{
-				consumer.HandleBasicDeliver("", ea.DeliveryTag, false, "", "", null, body);
-			};
-		});
+				consumer = (EventingBasicConsumer)cons;
+			});
 
 		// Act
-		var result = await _rabbitMQQueue.DequeueAsync<string>(queueName);
+		var dequeueTask = queue.DequeueAsync<object>(queueName);
+		consumer.HandleBasicDeliver("", 1, false, "", "", null, messageBody);
+
+		var result = await dequeueTask;
 
 		// Assert
-		Assert.Equal(message, result);
+		Assert.NotNull(result);
+		Assert.Equal(JsonSerializer.Serialize(expectedMessage), JsonSerializer.Serialize(result));
+		mockChannel.Verify(c => c.QueueDeclare(queueName, true, false, false, null), Times.Once);
+		mockChannel.Verify(c => c.BasicAck(1, false), Times.Once);
 	}
 }

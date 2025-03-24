@@ -1,46 +1,45 @@
-using BlogSharp.Services;
-using Microsoft.Extensions.Caching.Distributed;
-using Moq;
-using System.Text;
-using System.Text.Json;
 using Xunit;
-
-namespace BlogSharp.Tests.Services;
+using Moq;
+using Microsoft.Extensions.Caching.Distributed;
+using BlogSharp.Services;
+using System.Text.Json;
+using System.Text;
 
 public class RedisCacheTests
 {
-	private readonly Mock<IDistributedCache> _mockCache;
+	private readonly Mock<IDistributedCache> _mockDistributedCache;
 	private readonly RedisCache _redisCache;
 
 	public RedisCacheTests()
 	{
-		_mockCache = new Mock<IDistributedCache>();
-		_redisCache = new RedisCache(_mockCache.Object);
+		_mockDistributedCache = new Mock<IDistributedCache>();
+		_redisCache = new RedisCache(_mockDistributedCache.Object);
 	}
 
 	[Fact]
 	public async Task GetAsync_ReturnsValue_WhenKeyExists()
 	{
 		// Arrange
-		var key = "testKey";
-		var value = "testValue";
-		_mockCache.Setup(c => c.GetAsync(key, default))
-			.ReturnsAsync(Encoding.UTF8.GetBytes(JsonSerializer.Serialize(value)));
+		var key = "test-key";
+		var expectedValue = "test-value";
+		var serializedValue = Encoding.UTF8.GetBytes(JsonSerializer.Serialize(expectedValue));
+		_mockDistributedCache.Setup(cache => cache.GetAsync(key, default))
+							 .ReturnsAsync(serializedValue);
 
 		// Act
 		var result = await _redisCache.GetAsync<string>(key);
 
 		// Assert
-		Assert.Equal(value, result);
+		Assert.Equal(expectedValue, result);
 	}
 
 	[Fact]
 	public async Task GetAsync_ReturnsNull_WhenKeyDoesNotExist()
 	{
 		// Arrange
-		var key = "nonExistentKey";
-		_mockCache.Setup(c => c.GetAsync(key, default))
-			.ReturnsAsync((byte[]?)null);
+		var key = "non-existent-key";
+		_mockDistributedCache.Setup(cache => cache.GetAsync(key, default))
+							 .ReturnsAsync((byte[]?)null);
 
 		// Act
 		var result = await _redisCache.GetAsync<string>(key);
@@ -50,35 +49,46 @@ public class RedisCacheTests
 	}
 
 	[Fact]
-	public async Task SetAsync_SetsValueInCache()
+	public async Task SetAsync_StoresValueSuccessfully()
 	{
 		// Arrange
-		var key = "testKey";
-		var value = "testValue";
+		var key = "test-key";
+		var value = "test-value";
 		var expiration = TimeSpan.FromMinutes(5);
+		var serializedValue = Encoding.UTF8.GetBytes(JsonSerializer.Serialize(value));
+
+		_mockDistributedCache.Setup(cache => cache.SetAsync(
+			key,
+			serializedValue,
+			It.Is<DistributedCacheEntryOptions>(options =>
+				options.AbsoluteExpirationRelativeToNow == expiration),
+			default)).Returns(Task.CompletedTask);
 
 		// Act
 		await _redisCache.SetAsync(key, value, expiration);
 
 		// Assert
-		_mockCache.Verify(c => c.SetAsync(
+		_mockDistributedCache.Verify(cache => cache.SetAsync(
 			key,
-			It.IsAny<byte[]>(),
-			It.Is<DistributedCacheEntryOptions>(o => o.AbsoluteExpirationRelativeToNow == expiration),
-			default
-		), Times.Once);
+			serializedValue,
+			It.Is<DistributedCacheEntryOptions>(options =>
+				options.AbsoluteExpirationRelativeToNow == expiration),
+			default), Times.Once);
 	}
 
 	[Fact]
-	public async Task RemoveAsync_RemovesValueFromCache()
+	public async Task RemoveAsync_RemovesKeySuccessfully()
 	{
 		// Arrange
-		var key = "testKey";
+		var key = "test-key";
+
+		_mockDistributedCache.Setup(cache => cache.RemoveAsync(key, default))
+							 .Returns(Task.CompletedTask);
 
 		// Act
 		await _redisCache.RemoveAsync(key);
 
 		// Assert
-		_mockCache.Verify(c => c.RemoveAsync(key, default), Times.Once);
+		_mockDistributedCache.Verify(cache => cache.RemoveAsync(key, default), Times.Once);
 	}
 }
